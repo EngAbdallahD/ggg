@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engine Inventory Management System</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+min-height: 100vh;
+color: #ecf0f1;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.login-container, .main-container {
+background: rgba(52, 73, 94, 0.9);
+border-radius: 15px;
+padding: 30px;
+box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255,255,255,0.1);
+}
+.login-container { max-width: 400px; margin: 100px auto; text-align: center; }
+.logo { font-size: 2.5em; margin-bottom: 10px; color: #3498db; }
+.form-group { margin-bottom: 20px; text-align: left; }
+.form-group label { display: block; margin-bottom: 5px; color: #bdc3c7; font-weight: 500; }
+.form-group input, .form-group select, .form-group textarea {
+width: 100%; padding: 12px; border: 1px solid #34495e; border-radius: 8px;
+background: rgba(44, 62, 80, 0.8); color: #ecf0f1; font-size: 14px; transition: border-color 0.3s ease;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+outline: none; border-color: #3498db; box-shadow: 0 0 10px rgba(52,152,219,0.3);
+}
+.btn {
+background: linear-gradient(45deg, #3498db, #2980b9); color: white; padding: 12px 24px;
+border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500;
+transition: all 0.3s ease; margin: 5px;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(52,152,219,0.4); }
+.btn-secondary { background: linear-gradient(45deg, #95a5a6, #7f8c8d); }
+.btn-danger { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+.btn-success { background: linear-gradient(45deg, #27ae60, #229954); }
+.header {
+display: flex; justify-content: space-between; align-items: center;
+margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.user-info { display: flex; align-items: center; gap: 15px; }
+.user-role {
+background: rgba(52,152,219,0.2); padding: 5px 12px; border-radius: 20px; font-size: 12px;
+border: 1px solid #3498db;
+}
+.search-section { margin-bottom: 30px; }
+.search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+.search-box input { flex: 1; }
+.engine-grid {
+display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-top: 20px;
+}
+.engine-card {
+background: rgba(44,62,80,0.8); border-radius: 12px; padding: 20px;
+border: 1px solid rgba(255,255,255,0.1);
+transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;
+}
+.engine-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+.engine-id { font-size: 1.4em; font-weight: bold; color: #3498db; margin-bottom: 10px; }
+.engine-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.info-item { background: rgba(52,73,94,0.5); padding: 8px; border-radius: 5px; font-size: 13px; word-wrap: break-word; }
+.info-label { color: #bdc3c7; font-weight: 500; }
+.info-value { color: #ecf0f1; margin-top: 2px; }
+.engine-image {
+width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;
+background: rgba(52,73,94,0.3); display: flex; align-items: center; justify-content: center; color: #7f8c8d;
+}
+.admin-form {
+background: rgba(44,62,80,0.6); padding: 25px; border-radius: 12px;
+margin-bottom: 30px; border: 1px solid rgba(52,152,219,0.3);
+}
+.admin-form fieldset {
+border: 1px solid rgba(52,152,219,0.4); border-radius: 8px; padding: 20px; margin-bottom: 20px;
+}
+.admin-form legend {
+color: #3498db; font-weight: bold; padding: 0 10px; margin-left: 10px; font-size: 1.1em;
+}
+.form-row {
+display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 15px; margin-bottom: 15px;
+}
+.form-row .form-group, .admin-form > .form-group {
+margin-bottom: 0;
+}
+.form-row-single {
+grid-column: 1 / -1;
+}
+
+.hidden { display: none; }
+.no-results { text-align: center; color: #7f8c8d; font-size: 18px; margin-top: 50px; }
+.stats-section {
+display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 20px; margin-bottom: 30px;
+}
+.stat-card {
+background: rgba(52,152,219,0.2); padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #3498db;
+}
+.stat-number { font-size: 2em; font-weight: bold; color: #3498db; }
+.stat-label { color: #bdc3c7; margin-top: 5px; }
+.modal {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal.hidden { display: none !important; }
+.modal-content {
+background: #2c3e50; padding: 30px; border-radius: 15px; max-width: 700px; width: 90%;
+max-height: 85vh; overflow-y: auto;
+}
+.modal-content .info-item { margin-bottom: 5px;}
+.modal-section-title { color: #3498db; font-weight: bold; margin-top: 15px; margin-bottom: 10px; font-size: 1.1em; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;}
+
+</style>
+</head>
+<body>
+<div id="loginScreen" class="login-container">
+<div class="logo">🏭</div>
+<h2>Engine Inventory System</h2>
+<p style="margin-bottom: 30px; color: #7f8c8d;">Factory Management Portal</p>
+<div class="form-group">
+<label>Username</label>
+<input type="text" id="username" placeholder="Enter username">
+</div>
+<div class="form-group">
+<label>Password</label>
+<input type="password" id="password" placeholder="Enter password">
+</div>
+<button class="btn" onclick="login()">Login</button>
+<div id="loginError" style="color: #e74c3c; margin-top: 15px; display: none;">
+Invalid credentials. Please try again.
+</div>
+</div>
+
+<div id="mainApp" class="container hidden">
+<div class="main-container">
+<div class="header">
+<h1>🏭 Engine Inventory Management</h1>
+<div class="user-info">
+<div class="user-role" id="userRole">User</div>
+<span id="currentUser">HLP</span>
+<button class="btn btn-secondary" onclick="logout()">Logout</button>
+</div>
+</div>
+<div id="statsSection" class="stats-section hidden">
+<div class="stat-card">
+<div class="stat-number" id="totalEngines">0</div>
+<div class="stat-label">Total Engines</div>
+</div>
+<div class="stat-card">
+<div class="stat-number" id="activeEngines">0</div>
+<div class="stat-label">Active Engines</div>
+</div>
+<div class="stat-card">
+<div class="stat-number" id="maintenanceEngines">0</div>
+<div class="stat-label">Maintenance Engines</div>
+</div>
+</div>
+<div id="adminSection" class="hidden">
+<div class="admin-form">
+<h3 style="margin-bottom: 20px; color: #3498db;">Add New Engine</h3>
+
+<fieldset>
+<legend>Core Identifiers</legend>
+<div class="form-row">
+<div class="form-group">
+<label>Engine ID * (System Unique ID)</label>
+<input type="text" id="engineId" placeholder="e.g., ENG-SYS-001">
+</div>
+<div class="form-group">
+<label>Panel Number</label>
+<input type="text" id="panelNumber" placeholder="Panel ID">
+</div>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>Equipment Information</legend>
+<div class="form-row">
+<div class="form-group">
+<label>Equipment Tag No.</label>
+<input type="text" id="equipTagNo" placeholder="Tag Number">
+</div>
+<div class="form-group">
+<label>Equipment Description</label>
+<input type="text" id="equipDesc" placeholder="Description">
+</div>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>Motor MCC Data</legend>
+<div class="form-row">
+<div class="form-group"><label>Switch Room No.</label><input type="text" id="switchRoomNo" placeholder="Switch Room"></div>
+<div class="form-group"><label>MCC</label><input type="text" id="mcc" placeholder="MCC ID"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>MCC Location</label><input type="text" id="mccLocation" placeholder="Location of MCC"></div>
+<div class="form-group"><label>MCC Typical</label><input type="text" id="mccTypical" placeholder="MCC Typical details"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Profibus Address</label><input type="text" id="profibusAddress" placeholder="Address"></div>
+<div class="form-group"><label>Running Application</label><input type="text" id="runningApp" placeholder="Application"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Power (KW)</label><input type="number" step="0.01" id="powerKW_mcc" placeholder="e.g., 7.5"></div>
+<div class="form-group"><label>Current (AMP)</label><input type="number" step="0.01" id="currentAMP_mcc" placeholder="e.g., 15.2"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>System Cabinet</label><input type="text" id="systemCabinet" placeholder="Cabinet ID"></div>
+<div class="form-group"><label>Segment No.</label><input type="text" id="segmentNo" placeholder="Segment"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Redundant No.</label><input type="text" id="redundantNo" placeholder="Redundancy Info"></div>
+<div class="form-group"><label>Voltage</label><input type="text" id="voltage_mcc" placeholder="e.g., 400V"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Power Cable</label><input type="text" id="powerCable" placeholder="Cable Spec"></div>
+<div class="form-group"><label>Field Control Cable</label><input type="text" id="fieldControlCable" placeholder="Cable Spec"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>RTD Cable</label><input type="text" id="rtdCable" placeholder="Cable Spec"></div>
+<div class="form-group"><label>Heater Cable</label><input type="text" id="heaterCable" placeholder="Cable Spec"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Estimated Length</label><input type="text" id="estimatedLength_mcc" placeholder="e.g., 50m"></div>
+<div class="form-group"><label>MV CT Ratio</label><input type="text" id="mvCtRatio_mcc" placeholder="Ratio"></div>
+</div>
+<div class="form-row">
+<div class="form-group form-row-single"><label>HHM-Fuses SIBA</label><input type="text" id="hhmFusesSiba_mcc" placeholder="Fuse Details"></div>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>Motor Name Plate</legend>
+<div class="form-row">
+<div class="form-group"><label>Motor Description</label><input type="text" id="motorDescription_np" placeholder="Description from plate"></div>
+<div class="form-group"><label>Type</label><input type="text" id="type_np" placeholder="Motor Type"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Frame</label><input type="text" id="frame_np" placeholder="Frame Size"></div>
+<div class="form-group"><label>FLA (Full Load Amps)</label><input type="text" id="fla_np" placeholder="e.g., 14.8A"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>RPM</label><input type="number" id="rpm_np" placeholder="e.g., 1450"></div>
+<div class="form-group"><label>HP/KW</label><input type="text" id="hpKw_np" placeholder="e.g., 10HP/7.5KW"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Manufacturer (MANFC)</label><input type="text" id="manufacturer_np" placeholder="Manufacturer"></div>
+<div class="form-group"><label>Volts</label><input type="text" id="volts_np" placeholder="e.g., 380-415V"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Coupling Type</label><input type="text" id="couplingType_np" placeholder="Type"></div>
+<div class="form-group"><label>Mounting Type</label><input type="text" id="mountingType_np" placeholder="Type"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>J.Box Side</label><input type="text" id="jBoxSide_np" placeholder="e.g., Left"></div>
+<div class="form-group"><label>DE-Bearing</label><input type="text" id="deBearing_np" placeholder="Bearing Info"></div>
+</div>
+<div class="form-row">
+<div class="form-group form-row-single"><label>NDE-Bearing</label><input type="text" id="ndeBearing_np" placeholder="Bearing Info"></div>
+</div>
+<div class="form-row">
+<div class="form-group form-row-single">
+<label>Note (Name Plate)</label>
+<textarea id="note_np" rows="2" placeholder="Notes from name plate"></textarea>
+</div>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>Motor Replacements History</legend>
+<div class="form-row">
+<div class="form-group"><label>Date 1</label><input type="date" id="replacementDate1"></div>
+<div class="form-group"><label>Date 2</label><input type="date" id="replacementDate2"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Date 3</label><input type="date" id="replacementDate3"></div>
+<div class="form-group"><label>Date 4</label><input type="date" id="replacementDate4"></div>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>Breakers Related To</legend>
+<p style="color:#bdc3c7; font-size:0.9em; margin-bottom:10px;">Breaker 1:</p>
+<div class="form-row">
+<div class="form-group"><label>Equipment Description 1</label><input type="text" id="breakerEquipDesc1"></div>
+<div class="form-group"><label>Equipment Tag 1</label><input type="text" id="breakerEquipTag1"></div>
+<div class="form-group"><label>MCC Location 1</label><input type="text" id="breakerMccLocation1"></div>
+</div>
+<hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+<p style="color:#bdc3c7; font-size:0.9em; margin-bottom:10px;">Breaker 2:</p>
+<div class="form-row">
+<div class="form-group"><label>Equipment Description 2</label><input type="text" id="breakerEquipDesc2"></div>
+<div class="form-group"><label>Equipment Tag 2</label><input type="text" id="breakerEquipTag2"></div>
+<div class="form-group"><label>MCC Location 2</label><input type="text" id="breakerMccLocation2"></div>
+</div>
+</fieldset>
+
+<fieldset>
+<legend>Additional Information (Listed)</legend>
+<div class="form-row">
+<div class="form-group"><label>MOT.No.</label><input type="text" id="motNo_add" placeholder="Motor Number"></div>
+<div class="form-group"><label>Asset No.</label><input type="text" id="assetNo_add" placeholder="Asset Number"></div>
+</div>
+<div class="form-row">
+<div class="form-group form-row-single">
+<label>HLP Feedback / Note</label>
+<textarea id="hlpFeedbackNote_add" rows="2" placeholder="Feedback or notes"></textarea>
+</div>
+</div>
+</fieldset>
+<fieldset>
+<legend>System & Maintenance</legend>
+<div class="form-row">
+<div class="form-group">
+<label>Status</label>
+<select id="status">
+<option value="Active">Active</option>
+<option value="Maintenance">Maintenance</option>
+<option value="Inactive">Inactive</option>
+</select>
+</div>
+</div>
+<div class="form-group">
+<label>General Additional Notes</label>
+<textarea id="notes_general" rows="3" placeholder="Any other general information"></textarea>
+</div>
+<div class="form-group">
+<label>Engine Image</label>
+<input type="file" id="engineImage" accept="image/*" onchange="previewImage(this)">
+<div id="imagePreview" style="margin-top: 10px;"></div>
+</div>
+</fieldset>
+
+<button class="btn btn-success" onclick="addEngine()">Add Engine</button>
+<button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+</div>
+</div>
+<div class="search-section">
+<h3 style="margin-bottom: 15px;">Search Engines</h3>
+<div class="search-box">
+<input type="text" id="searchInput" placeholder="Enter Engine ID, Tag, or Description to search..." onkeyup="searchEngines()">
+<button class="btn" onclick="searchEngines()">Search</button>
+<button class="btn btn-secondary" onclick="showAllEngines()">Show All</button>
+</div>
+</div>
+<div id="engineResults">
+<div id="noResults" class="no-results">
+Enter search terms to find engines.
+</div>
+<div id="engineGrid" class="engine-grid"></div>
+</div>
+</div>
+</div>
+<div id="engineModal" class="modal hidden">
+<div class="modal-content">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<h3 id="modalTitle">Engine Details</h3>
+<button class="btn btn-secondary" onclick="closeModal()">Close</button>
+</div>
+<div id="modalContent" style="display: grid; gap: 10px;"></div>
+</div>
+</div>
+
+<script type="module">
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    // query, where, // For more specific queries like checking if ID exists
+    // doc, setDoc, // If you want to set your own document IDs
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+    getStorage,
+    ref as storageRef,
+    uploadBytesResumable,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCGfxeiBzsJC3mvp5OQokdayGTMvQm79m0", // IMPORTANT: Secure this with Firebase App Check or use strict Security Rules
+  authDomain: "motor-inventory-77e1f.firebaseapp.com",
+  projectId: "motor-inventory-77e1f",
+  storageBucket: "motor-inventory-77e1f.appspot.com", // Standard format, ensure this is correct in your Firebase console
+  messagingSenderId: "896639039816",
+  appId: "1:896639039816:web:0c080c5cb6146f309e9b7d",
+  measurementId: "G-ZEEE17JMH5"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const enginesCollectionRef = collection(db, "engines");
+
+// Global variables
+let engines = [];
+let currentUser = '';
+let isAdmin = false;
+
+// --- End of Firebase Setup ---
+
+async function loadEnginesFromFirestore() {
+    try {
+        const querySnapshot = await getDocs(enginesCollectionRef);
+        engines = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            // 'data.id' is the Engine ID (System Unique ID) from the form
+            // 'doc.id' is Firestore's automatically generated document ID
+            return { ...data, firestoreDocId: doc.id }; // Store Firestore's doc ID if needed later
+        });
+        console.log("Engines loaded from Firestore:", engines);
+    } catch (error) {
+        console.error("Error loading engines from Firestore:", error);
+        engines = []; // Fallback to empty array on error
+        alert("Could not load engine data from the database. Please check the console for errors.");
+    }
+    // These are called regardless of success/failure to update UI accordingly
+    updateStatistics();
+    displayEngines(engines);
+}
+
+function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const loginError = document.getElementById('loginError');
+
+    //Simplified login logic (not secure for production, use Firebase Auth for real users)
+    if (username === 'HLP' && password === 'HLP') {
+        currentUser = 'HLP';
+        isAdmin = false;
+        showMainApp();
+    } else if (username === 'HLP' && password === 'MCC') {
+        currentUser = 'HLP (Admin)';
+        isAdmin = true;
+        showMainApp();
+    } else {
+        loginError.style.display = 'block';
+        setTimeout(() => { loginError.style.display = 'none'; }, 3000);
+    }
+}
+
+async function showMainApp() {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    updateUserInterface(); // Update UI elements like role display first
+    await loadEnginesFromFirestore(); // Then load data, which will also update stats and display
+}
+
+function updateUserInterface() {
+    const userRole = document.getElementById('userRole');
+    const currentUserSpan = document.getElementById('currentUser');
+    const adminSection = document.getElementById('adminSection');
+    const statsSection = document.getElementById('statsSection');
+
+    currentUserSpan.textContent = currentUser;
+    if (isAdmin) {
+        userRole.textContent = 'Administrator';
+        userRole.style.background = 'rgba(231,76,60,0.2)';
+        userRole.style.borderColor = '#e74c3c';
+        adminSection.classList.remove('hidden');
+        statsSection.classList.remove('hidden');
+    } else {
+        userRole.textContent = 'User';
+        userRole.style.background = 'rgba(52,152,219,0.2)';
+        userRole.style.borderColor = '#3498db';
+        adminSection.classList.add('hidden');
+        statsSection.classList.add('hidden');
+    }
+}
+
+function updateStatistics() {
+    document.getElementById('totalEngines').textContent = engines.length;
+    document.getElementById('activeEngines').textContent = engines.filter(e => e.status === 'Active').length;
+    document.getElementById('maintenanceEngines').textContent = engines.filter(e => e.status === 'Maintenance').length;
+}
+
+function searchEngines() {
+    const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+    const engineGrid = document.getElementById('engineGrid');
+    const noResults = document.getElementById('noResults');
+
+    if (searchTerm === '') {
+        showAllEngines();
+        return;
+    }
+
+    const filteredEngines = engines.filter(engine =>
+        (engine.id && engine.id.toLowerCase().includes(searchTerm)) ||
+        (engine.equipTagNo && engine.equipTagNo.toLowerCase().includes(searchTerm)) ||
+        (engine.equipDesc && engine.equipDesc.toLowerCase().includes(searchTerm)) ||
+        (engine.mccLocation && engine.mccLocation.toLowerCase().includes(searchTerm)) ||
+        (engine.location && engine.location.toLowerCase().includes(searchTerm)) // For backward compatibility with old data
+    );
+    displayEngines(filteredEngines);
+}
+
+function showAllEngines() {
+    document.getElementById('searchInput').value = '';
+    displayEngines(engines);
+}
+
+function displayEngines(engineList) {
+    const engineGrid = document.getElementById('engineGrid');
+    const noResults = document.getElementById('noResults');
+    const currentSearchTerm = document.getElementById('searchInput').value.trim();
+
+    if (engineList.length === 0) {
+        engineGrid.innerHTML = '';
+        if (currentSearchTerm !== '') {
+            noResults.textContent = 'No engines found matching your search.';
+        } else {
+            noResults.textContent = 'No engines in inventory. Add engines using the form above (Admin).';
+        }
+        noResults.style.display = 'block';
+        return;
+    }
+    noResults.style.display = 'none';
+    engineGrid.innerHTML = engineList.map(engine => {
+        const displayLocation = engine.mccLocation || engine.location || 'N/A';
+        const displayPower = engine.powerKW_mcc !== undefined ? engine.powerKW_mcc : (engine.power !== undefined ? engine.power : 'N/A');
+
+        return `
+        <div class="engine-card" onclick="showEngineDetails('${engine.id}')">
+        <div class="engine-id">${engine.id} ${engine.equipTagNo ? '('+engine.equipTagNo+')' : ''}</div>
+        <div class="engine-image">
+            ${engine.image ? `<img src="${engine.image}" alt="Engine Image" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">` : '📷 No Image'}
+        </div>
+        <div class="engine-info">
+            <div class="info-item"><div class="info-label">Description</div><div class="info-value">${engine.equipDesc || 'N/A'}</div></div>
+            <div class="info-item"><div class="info-label">Location</div><div class="info-value">${displayLocation}</div></div>
+            <div class="info-item"><div class="info-label">Power</div><div class="info-value">${displayPower !== 'N/A' ? displayPower + ' kW' : 'N/A'}</div></div>
+            <div class="info-item"><div class="info-label">Status</div><div class="info-value" style="color: ${getStatusColor(engine.status)}">${engine.status}</div></div>
+        </div>
+        </div>
+        `}).join('');
+}
+
+function getStatusColor(status) {
+    switch(status) {
+        case 'Active': return '#27ae60';
+        case 'Maintenance': return '#f39c12';
+        case 'Inactive': return '#e74c3c';
+        default: return '#7f8c8d';
+    }
+}
+
+function formatModalItem(label, value, isHtml = false) {
+    if (value === undefined || value === null || String(value).trim() === '') return '';
+    return `<div class="info-item"><div class="info-label">${label}</div><div class="info-value">${isHtml ? value : String(value).replace(/\n/g, '<br>')}</div></div>`;
+}
+
+function showEngineDetails(engineSystemId) { // Parameter is the user-defined system ID
+    const engine = engines.find(e => e.id === engineSystemId);
+    if (!engine) {
+        console.error("Engine not found with ID:", engineSystemId);
+        alert("Engine details could not be found.");
+        return;
+    }
+    const modal = document.getElementById('engineModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+
+    modalTitle.textContent = `Engine Details - ${engine.id}`;
+    let contentHtml = '';
+    if (engine.image) {
+        contentHtml += `<div style="text-align: center; margin-bottom:15px;"><img src="${engine.image}" alt="Engine Image" style="max-width: 100%; max-height: 250px; border-radius: 8px;"></div>`;
+    }
+
+    contentHtml += `<div class="modal-section-title">Core Identifiers</div>`;
+    contentHtml += formatModalItem('Engine ID (System)', engine.id);
+    contentHtml += formatModalItem('Panel Number', engine.panelNumber);
+
+    contentHtml += `<div class="modal-section-title">Equipment Information</div>`;
+    contentHtml += formatModalItem('Equipment Tag No.', engine.equipTagNo);
+    contentHtml += formatModalItem('Equipment Description', engine.equipDesc);
+
+    contentHtml += `<div class="modal-section-title">Motor MCC Data</div>`;
+    contentHtml += formatModalItem('Switch Room No.', engine.switchRoomNo);
+    contentHtml += formatModalItem('MCC', engine.mcc);
+    contentHtml += formatModalItem('MCC Location', engine.mccLocation);
+    contentHtml += formatModalItem('MCC Typical', engine.mccTypical);
+    contentHtml += formatModalItem('Profibus Address', engine.profibusAddress);
+    contentHtml += formatModalItem('Running Application', engine.runningApp);
+    contentHtml += formatModalItem('Power (KW - MCC)', engine.powerKW_mcc);
+    contentHtml += formatModalItem('Current (AMP - MCC)', engine.currentAMP_mcc);
+    contentHtml += formatModalItem('System Cabinet', engine.systemCabinet);
+    contentHtml += formatModalItem('Segment No.', engine.segmentNo);
+    contentHtml += formatModalItem('Redundant No.', engine.redundantNo);
+    contentHtml += formatModalItem('Voltage (MCC)', engine.voltage_mcc);
+    contentHtml += formatModalItem('Power Cable', engine.powerCable);
+    contentHtml += formatModalItem('Field Control Cable', engine.fieldControlCable);
+    contentHtml += formatModalItem('RTD Cable', engine.rtdCable);
+    contentHtml += formatModalItem('Heater Cable', engine.heaterCable);
+    contentHtml += formatModalItem('Estimated Length', engine.estimatedLength_mcc);
+    contentHtml += formatModalItem('MV CT Ratio', engine.mvCtRatio_mcc);
+    contentHtml += formatModalItem('HHM-Fuses SIBA', engine.hhmFusesSiba_mcc);
+
+    contentHtml += `<div class="modal-section-title">Motor Name Plate</div>`;
+    contentHtml += formatModalItem('Motor Description', engine.motorDescription_np);
+    contentHtml += formatModalItem('Type', engine.type_np);
+    contentHtml += formatModalItem('Frame', engine.frame_np);
+    contentHtml += formatModalItem('FLA', engine.fla_np);
+    contentHtml += formatModalItem('RPM', engine.rpm_np);
+    contentHtml += formatModalItem('HP/KW', engine.hpKw_np);
+    contentHtml += formatModalItem('Manufacturer (MANFC)', engine.manufacturer_np);
+    contentHtml += formatModalItem('Volts (Name Plate)', engine.volts_np);
+    contentHtml += formatModalItem('Coupling Type', engine.couplingType_np);
+    contentHtml += formatModalItem('Mounting Type', engine.mountingType_np);
+    contentHtml += formatModalItem('J.Box Side', engine.jBoxSide_np);
+    contentHtml += formatModalItem('DE-Bearing', engine.deBearing_np);
+    contentHtml += formatModalItem('NDE-Bearing', engine.ndeBearing_np);
+    contentHtml += formatModalItem('Note (Name Plate)', engine.note_np);
+
+    contentHtml += `<div class="modal-section-title">Motor Replacements History</div>`;
+    contentHtml += formatModalItem('Replacement Date 1', engine.replacementDate1);
+    contentHtml += formatModalItem('Replacement Date 2', engine.replacementDate2);
+    contentHtml += formatModalItem('Replacement Date 3', engine.replacementDate3);
+    contentHtml += formatModalItem('Replacement Date 4', engine.replacementDate4);
+
+    contentHtml += `<div class="modal-section-title">Breakers Related To</div>`;
+    contentHtml += formatModalItem('Breaker 1: Equip. Desc.', engine.breakerEquipDesc1);
+    contentHtml += formatModalItem('Breaker 1: Equip. Tag', engine.breakerEquipTag1);
+    contentHtml += formatModalItem('Breaker 1: MCC Location', engine.breakerMccLocation1);
+    contentHtml += formatModalItem('Breaker 2: Equip. Desc.', engine.breakerEquipDesc2);
+    contentHtml += formatModalItem('Breaker 2: Equip. Tag', engine.breakerEquipTag2);
+    contentHtml += formatModalItem('Breaker 2: MCC Location', engine.breakerMccLocation2);
+
+    contentHtml += `<div class="modal-section-title">Additional Information (Listed)</div>`;
+    contentHtml += formatModalItem('MOT.No.', engine.motNo_add);
+    contentHtml += formatModalItem('Asset No.', engine.assetNo_add);
+    contentHtml += formatModalItem('HLP Feedback / Note', engine.hlpFeedbackNote_add);
+
+    contentHtml += `<div class="modal-section-title">System & Maintenance</div>`;
+    const statusHtml = `<span style="color: ${getStatusColor(engine.status)}">${engine.status}</span>`;
+    contentHtml += formatModalItem('Status', statusHtml, true);
+    contentHtml += formatModalItem('General Additional Notes', engine.notes_general);
+    
+    // For old data compatibility (these fields were at the root of the sampleEngines object)
+    if (engine.location && !engine.mccLocation) contentHtml += formatModalItem('Old Location Field', engine.location);
+    if (engine.controlRoom && !engine.switchRoomNo) contentHtml += formatModalItem('Old Control Room Field', engine.controlRoom);
+    if (engine.voltage && !engine.voltage_mcc && !engine.volts_np) contentHtml += formatModalItem('Old Voltage Field', engine.voltage + ' V');
+    if (engine.current && !engine.currentAMP_mcc && !engine.fla_np) contentHtml += formatModalItem('Old Current Field', engine.current + ' A');
+    if (engine.power && !engine.powerKW_mcc && !engine.hpKw_np) contentHtml += formatModalItem('Old Power Field', engine.power + ' kW');
+    if (engine.rpm && !engine.rpm_np) contentHtml += formatModalItem('Old RPM Field', engine.rpm);
+    if (engine.manufacturer && !engine.manufacturer_np) contentHtml += formatModalItem('Old Manufacturer Field', engine.manufacturer);
+    if (engine.notes && !engine.notes_general && !engine.note_np && !engine.hlpFeedbackNote_add) contentHtml += formatModalItem('Old Notes Field', engine.notes);
+
+
+    modalContent.innerHTML = contentHtml;
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    const modal = document.getElementById('engineModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+}
+
+function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width: 200px; max-height: 150px; border-radius: 8px;">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.innerHTML = '';
+    }
+}
+
+async function addEngine() {
+    if (!isAdmin) {
+        alert('Access denied. Administrator privileges required.');
+        return;
+    }
+    const engineIdValue = document.getElementById('engineId').value.trim();
+    if (!engineIdValue) {
+        alert('Engine ID (System Unique ID) is required.');
+        return;
+    }
+
+    // Basic client-side check for ID uniqueness (for immediate feedback)
+    // Firestore rules should enforce true uniqueness if engineIdValue is used as document ID
+    if (engines.some(e => e.id === engineIdValue)) {
+        alert('Engine ID already exists in the current list. Please use a different ID.');
+        return;
+    }
+
+    const imageFile = document.getElementById('engineImage').files[0];
+    let imageUrl = ''; // This will hold the Firebase Storage URL
+
+    const saveEngineData = async (finalImageUrl) => {
+        const newEngine = {
+            id: engineIdValue, // This is the user-defined System Unique ID
+            panelNumber: document.getElementById('panelNumber').value.trim(),
+            equipTagNo: document.getElementById('equipTagNo').value.trim(),
+            equipDesc: document.getElementById('equipDesc').value.trim(),
+
+            switchRoomNo: document.getElementById('switchRoomNo').value.trim(),
+            mcc: document.getElementById('mcc').value.trim(),
+            mccLocation: document.getElementById('mccLocation').value.trim(),
+            mccTypical: document.getElementById('mccTypical').value.trim(),
+            profibusAddress: document.getElementById('profibusAddress').value.trim(),
+            runningApp: document.getElementById('runningApp').value.trim(),
+            powerKW_mcc: parseFloat(document.getElementById('powerKW_mcc').value) || null,
+            currentAMP_mcc: parseFloat(document.getElementById('currentAMP_mcc').value) || null,
+            systemCabinet: document.getElementById('systemCabinet').value.trim(),
+            segmentNo: document.getElementById('segmentNo').value.trim(),
+            redundantNo: document.getElementById('redundantNo').value.trim(),
+            voltage_mcc: document.getElementById('voltage_mcc').value.trim(),
+            powerCable: document.getElementById('powerCable').value.trim(),
+            fieldControlCable: document.getElementById('fieldControlCable').value.trim(),
+            rtdCable: document.getElementById('rtdCable').value.trim(),
+            heaterCable: document.getElementById('heaterCable').value.trim(),
+            estimatedLength_mcc: document.getElementById('estimatedLength_mcc').value.trim(),
+            mvCtRatio_mcc: document.getElementById('mvCtRatio_mcc').value.trim(),
+            hhmFusesSiba_mcc: document.getElementById('hhmFusesSiba_mcc').value.trim(),
+
+            motorDescription_np: document.getElementById('motorDescription_np').value.trim(),
+            type_np: document.getElementById('type_np').value.trim(),
+            frame_np: document.getElementById('frame_np').value.trim(),
+            fla_np: document.getElementById('fla_np').value.trim(),
+            rpm_np: parseInt(document.getElementById('rpm_np').value) || null,
+            hpKw_np: document.getElementById('hpKw_np').value.trim(),
+            manufacturer_np: document.getElementById('manufacturer_np').value.trim(),
+            volts_np: document.getElementById('volts_np').value.trim(),
+            couplingType_np: document.getElementById('couplingType_np').value.trim(),
+            mountingType_np: document.getElementById('mountingType_np').value.trim(),
+            jBoxSide_np: document.getElementById('jBoxSide_np').value.trim(),
+            deBearing_np: document.getElementById('deBearing_np').value.trim(),
+            ndeBearing_np: document.getElementById('ndeBearing_np').value.trim(),
+            note_np: document.getElementById('note_np').value.trim(),
+
+            replacementDate1: document.getElementById('replacementDate1').value,
+            replacementDate2: document.getElementById('replacementDate2').value,
+            replacementDate3: document.getElementById('replacementDate3').value,
+            replacementDate4: document.getElementById('replacementDate4').value,
+
+            breakerEquipDesc1: document.getElementById('breakerEquipDesc1').value.trim(),
+            breakerEquipTag1: document.getElementById('breakerEquipTag1').value.trim(),
+            breakerMccLocation1: document.getElementById('breakerMccLocation1').value.trim(),
+            breakerEquipDesc2: document.getElementById('breakerEquipDesc2').value.trim(),
+            breakerEquipTag2: document.getElementById('breakerEquipTag2').value.trim(),
+            breakerMccLocation2: document.getElementById('breakerMccLocation2').value.trim(),
+
+            motNo_add: document.getElementById('motNo_add').value.trim(),
+            assetNo_add: document.getElementById('assetNo_add').value.trim(),
+            hlpFeedbackNote_add: document.getElementById('hlpFeedbackNote_add').value.trim(),
+            status: document.getElementById('status').value,
+            notes_general: document.getElementById('notes_general').value.trim(),
+            image: finalImageUrl
+        };
+
+        try {
+            const docRef = await addDoc(enginesCollectionRef, newEngine);
+            console.log("Engine added to Firestore with auto-generated doc ID: ", docRef.id);
+            // The 'newEngine' object (containing the user's 'id') is saved.
+            // Refresh local data and UI
+            await loadEnginesFromFirestore(); // This will update 'engines' array, stats, and display
+            clearForm();
+            alert('Engine added successfully!');
+            document.getElementById('searchInput').value = engineIdValue; // Auto-search for the new engine
+            searchEngines();
+        } catch (error) {
+            console.error("Error adding engine to Firestore: ", error);
+            alert('Error adding engine to database. Check console for details.');
+        }
+    };
+
+    if (imageFile) {
+        const imageStoragePath = `engine_images/${engineIdValue}-${Date.now()}-${imageFile.name}`;
+        const fileRef = storageRef(storage, imageStoragePath);
+        const uploadTask = uploadBytesResumable(fileRef, imageFile);
+
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                console.log('Upload is ' + progress + '% done');
+                // Optionally, display progress to the user
+            },
+            (error) => {
+                console.error("Image upload error: ", error);
+                alert('Image upload failed. Saving engine data without image. Error: ' + error.message);
+                saveEngineData(''); // Proceed to save data without image URL
+            },
+            async () => {
+                try {
+                    imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                    console.log('File available at', imageUrl);
+                    await saveEngineData(imageUrl);
+                } catch (error) {
+                    console.error("Error getting download URL: ", error);
+                    alert('Failed to get image URL after upload. Saving engine data without image.');
+                    await saveEngineData(''); // Proceed to save data without image URL
+                }
+            }
+        );
+    } else {
+        await saveEngineData(''); // No image to upload, save with empty image URL
+    }
+}
+
+function clearForm() {
+    document.getElementById('engineId').value = '';
+    document.getElementById('panelNumber').value = '';
+    document.getElementById('equipTagNo').value = '';
+    document.getElementById('equipDesc').value = '';
+
+    document.getElementById('switchRoomNo').value = '';
+    document.getElementById('mcc').value = '';
+    document.getElementById('mccLocation').value = '';
+    document.getElementById('mccTypical').value = '';
+    document.getElementById('profibusAddress').value = '';
+    document.getElementById('runningApp').value = '';
+    document.getElementById('powerKW_mcc').value = '';
+    document.getElementById('currentAMP_mcc').value = '';
+    document.getElementById('systemCabinet').value = '';
+    document.getElementById('segmentNo').value = '';
+    document.getElementById('redundantNo').value = '';
+    document.getElementById('voltage_mcc').value = '';
+    document.getElementById('powerCable').value = '';
+    document.getElementById('fieldControlCable').value = '';
+    document.getElementById('rtdCable').value = '';
+    document.getElementById('heaterCable').value = '';
+    document.getElementById('estimatedLength_mcc').value = '';
+    document.getElementById('mvCtRatio_mcc').value = '';
+    document.getElementById('hhmFusesSiba_mcc').value = '';
+    document.getElementById('motorDescription_np').value = '';
+    document.getElementById('type_np').value = '';
+    document.getElementById('frame_np').value = '';
+    document.getElementById('fla_np').value = '';
+    document.getElementById('rpm_np').value = '';
+    document.getElementById('hpKw_np').value = '';
+    document.getElementById('manufacturer_np').value = '';
+    document.getElementById('volts_np').value = '';
+    document.getElementById('couplingType_np').value = '';
+    document.getElementById('mountingType_np').value = '';
+    document.getElementById('jBoxSide_np').value = '';
+    document.getElementById('deBearing_np').value = '';
+    document.getElementById('ndeBearing_np').value = '';
+    document.getElementById('note_np').value = '';
+
+    document.getElementById('replacementDate1').value = '';
+    document.getElementById('replacementDate2').value = '';
+    document.getElementById('replacementDate3').value = '';
+    document.getElementById('replacementDate4').value = '';
+
+    document.getElementById('breakerEquipDesc1').value = '';
+    document.getElementById('breakerEquipTag1').value = '';
+    document.getElementById('breakerMccLocation1').value = '';
+    document.getElementById('breakerEquipDesc2').value = '';
+    document.getElementById('breakerEquipTag2').value = '';
+    document.getElementById('breakerMccLocation2').value = '';
+    document.getElementById('motNo_add').value = '';
+    document.getElementById('assetNo_add').value = '';
+    document.getElementById('hlpFeedbackNote_add').value = '';
+
+    document.getElementById('status').value = 'Active';
+    document.getElementById('notes_general').value = '';
+    document.getElementById('engineImage').value = ''; // Clear file input
+    document.getElementById('imagePreview').innerHTML = ''; // Clear image preview
+}
+
+function logout() {
+    document.getElementById('mainApp').classList.add('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    currentUser = '';
+    isAdmin = false;
+    engines = []; // Clear local engine cache on logout
+    updateStatistics(); // Reset stats
+    displayEngines([]); // Clear displayed engines
+}
+
+// Make functions globally accessible for onclick handlers
+window.login = login;
+window.logout = logout;
+window.addEngine = addEngine;
+window.clearForm = clearForm;
+window.searchEngines = searchEngines;
+window.showAllEngines = showAllEngines;
+window.showEngineDetails = showEngineDetails;
+window.closeModal = closeModal;
+window.previewImage = previewImage;
+
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen) {
+        loginScreen.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !loginScreen.classList.contains('hidden')) {
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'BUTTON') {
+                    if(loginScreen.contains(document.activeElement)){
+                        login();
+                    }
+                }
+            }
+        });
+    }
+    const engineModal = document.getElementById('engineModal');
+    if (engineModal) {
+        engineModal.addEventListener('click', function(e) {
+            if (e.target === this) { closeModal(); }
+        });
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && engineModal && !engineModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+});
+
+</script>
+</body>
+</html>
